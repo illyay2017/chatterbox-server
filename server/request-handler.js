@@ -20,6 +20,11 @@ var defaultCorsHeaders = {
 
 var db = [];
 
+var scriptAndStyleRemover = function(str) {
+  return str.replace(/(<script>|<\/script>|<style>|<\/style>)/g, function(word) {
+    return '';
+  });
+};
 
 var requestHandler = function(request, response) {
   // Request and Response come from node's http module.
@@ -50,21 +55,22 @@ var requestHandler = function(request, response) {
   // console.log('this is the request: ', request);
   // console.log('this is the response: ', response);
   const {method, url, data} = request;
-  console.log('this is the method: ', method);
-  console.log('this is the url: ', url);
+  // console.log('this is the method: ', method);
+  // console.log('this is the url: ', url);
   request.on('data', (chunk) => {
-    console.log(JSON.parse(chunk.toString()));
-    db.push({
-      text: JSON.parse(chunk.toString()).message,
-      username: JSON.parse(chunk.toString()).username
-    });
+    // console.log(JSON.parse(chunk.toString()));
+    if (chunk) {
+      db.push({
+        message: scriptAndStyleRemover(JSON.parse(chunk).message),
+        username: JSON.parse(chunk.toString()).username
+      });
+    }
   });
   
   if (url.slice(0, 17) === '/classes/messages' && method === 'POST') {
     // console.log('hola');
     statusCode = 201;
   } else if (url.slice(0, 17) === '/classes/messages' && method === 'GET') {
-    console.log('This town ain\'t big enough for the both of us');
     statusCode = 200;
   } else {
     statusCode = 404;
@@ -90,7 +96,7 @@ var requestHandler = function(request, response) {
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
   // console.log(request.method);
-  console.log(JSON.stringify({'results': db}));
+  // console.log(JSON.stringify({'results': db}));
   response.end(JSON.stringify({'results': db}));
 
 };
@@ -105,4 +111,4 @@ var requestHandler = function(request, response) {
 // Another way to get around this restriction is to serve you chat
 // client from this domain by setting up static file serving.
 
-exports.handleResponse = requestHandler;
+exports.requestHandler = requestHandler;
