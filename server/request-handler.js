@@ -18,6 +18,7 @@ var defaultCorsHeaders = {
   'access-control-max-age': 10 // Seconds.
 };
 
+var db = [];
 
 
 var requestHandler = function(request, response) {
@@ -35,12 +36,6 @@ var requestHandler = function(request, response) {
   // Adding more logging to your server can be an easy way to get passive
   // debugging help, but you should always be careful about leaving stray
   // console.logs in your code.
-  request.on('error', err => {
-    console.log(err);
-  }).on('data', stuff => {
-    console.log(stuff);
-  });
-
   // The outgoing status.
   var statusCode = 200;
 
@@ -52,10 +47,40 @@ var requestHandler = function(request, response) {
   // You will need to change this if you are sending something
   // other than plain text, like JSON or HTML.
   headers['Content-Type'] = 'text/plain';
+  // console.log('this is the request: ', request);
+  // console.log('this is the response: ', response);
+  const {method, url, data} = request;
+  console.log('this is the method: ', method);
+  console.log('this is the url: ', url);
+  request.on('data', (chunk) => {
+    console.log(JSON.parse(chunk.toString()));
+    db.push({
+      text: JSON.parse(chunk.toString()).message,
+      username: JSON.parse(chunk.toString()).username
+    });
+  });
+  
+  if (url.slice(0, 17) === '/classes/messages' && method === 'POST') {
+    // console.log('hola');
+    statusCode = 201;
+  } else if (url.slice(0, 17) === '/classes/messages' && method === 'GET') {
+    console.log('This town ain\'t big enough for the both of us');
+    statusCode = 200;
+  } else {
+    statusCode = 404;
+  }
+  // request.on('error', err => {
+  //   statusCode = '404';
+  // }).on('data', stuff => {
+  //   console.log(stuff);
+  // });
+
 
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
   response.writeHead(statusCode, headers);
+  
+
 
   // Make sure to always call response.end() - Node may not send
   // anything back to the client until you do. The string you pass to
@@ -64,7 +89,10 @@ var requestHandler = function(request, response) {
   //
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
-  response.end(JSON.stringify({'results': []}));
+  // console.log(request.method);
+  console.log(JSON.stringify({'results': db}));
+  response.end(JSON.stringify({'results': db}));
+
 };
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
